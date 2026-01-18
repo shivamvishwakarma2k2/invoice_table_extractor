@@ -1,0 +1,5 @@
+
+
+https://huggingface.co/DILHTWD/documentlayoutsegmentation_YOLOv8_ondoclaynet/tree/main
+
+https://huggingface.co/omoured/YOLOv10-Document-Layout-Analysis/tree/main
