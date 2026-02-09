@@ -63,6 +63,42 @@ def preprocess_image(image):
     return enhanced
 
 
+def preprocess_for_ocr(image):
+    """
+    Preprocessing pipeline specifically for PaddleOCR.
+
+    PaddleOCR works better on natural-looking images.
+    So we avoid aggressive binarization and morphology.
+
+    Steps:
+    - Resize
+    - Light denoise
+    - Grayscale
+    - Contrast normalization
+    """
+
+    # Resize for consistency
+    image = resize_image(image)
+
+    # Convert to grayscale
+    if len(image.shape) == 3:
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    else:
+        gray = image.copy()
+
+    # Light noise removal (not aggressive)
+    gray = cv2.GaussianBlur(gray, (3, 3), 0)
+
+    # Contrast normalization (keeps texture)
+    gray = cv2.normalize(gray, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX)
+
+    # Convert back to BGR (PaddleOCR prefers BGR/RGB)
+    ocr_ready = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
+
+    return ocr_ready
+
+
+
 # def remove_table_lines(binary_img):
 #     """
 #     Generic table-line removal for grid-based documents.
