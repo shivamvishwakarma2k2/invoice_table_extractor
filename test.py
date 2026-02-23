@@ -1,52 +1,28 @@
-# test_step8_pipeline.py
-
 import os
 import cv2
-
-# STEP-1 + STEP-4 preprocessing
 from preprocessing.image_cleaner import load_image, preprocess_for_ocr
-
-# STEP-2 layout detection
 from layout_detection.layout_model import detect_layout
-
-# STEP-3 table crop
 from table_extraction.extractor import extract_clean_table
-
-# STEP-3 table selector (clean architecture)
 from table_extraction.table_selector import select_main_table
-
-# STEP-4 OCR
 from ocr.ocr_engine import run_ocr
-
-# STEP-5 line detection (optional)
 from structure.line_detector import detect_table_lines
-
-# STEP-6 candidate row detection
 from structure.row_detector import detect_rows
-
-# STEP-7 column detection (CLASS BASED)
 from structure.column_detector import ColumnDetector
-
-# STEP-8 logical row reconstruction
 from structure.logical_row_builder import LogicalRowBuilder
 
 
 def test_step8():
 
-    INPUT_IMAGE = "test_images/invoice5.jpg"
+    INPUT_IMAGE = "test_images/invoice.jpg"
     OUTPUT_DIR = "test_outputs/step8"
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-    # --------------------------------------------------
-    # STEP-1 Load image
-    # --------------------------------------------------
+
     print("STEP-1: Load image")
     image = load_image(INPUT_IMAGE)
 
-    # --------------------------------------------------
-    # STEP-2 Layout Detection
-    # --------------------------------------------------
+
     print("STEP-2: Detect layout")
     layout = detect_layout(image)
 
@@ -56,9 +32,7 @@ def test_step8():
 
     print("Tables detected:", len(layout.tables))
 
-    # --------------------------------------------------
-    # STEP-3 Select MAIN table (supports multi-table invoices)
-    # --------------------------------------------------
+
     print("STEP-3: Select main table")
 
     main_table = select_main_table(layout)
@@ -71,9 +45,7 @@ def test_step8():
 
     cv2.imwrite(os.path.join(OUTPUT_DIR, "step3_table_crop.png"), table_img)
 
-    # --------------------------------------------------
-    # STEP-4 OCR
-    # --------------------------------------------------
+
     print("STEP-4: OCR preprocessing")
 
     ocr_ready = preprocess_for_ocr(table_img)
@@ -84,9 +56,7 @@ def test_step8():
 
     print("OCR words detected:", len(words))
 
-    # --------------------------------------------------
-    # STEP-5 Line Detection (optional)
-    # --------------------------------------------------
+
     print("STEP-5: Detect table lines")
 
     horizontal_lines, vertical_lines = detect_table_lines(table_img)
@@ -94,18 +64,14 @@ def test_step8():
     print("Horizontal lines:", len(horizontal_lines))
     print("Vertical lines:", len(vertical_lines))
 
-    # --------------------------------------------------
-    # STEP-6 Candidate Row Detection
-    # --------------------------------------------------
+
     print("STEP-6: Detect candidate rows")
 
     rows = detect_rows(words)
 
     print("Candidate rows detected:", len(rows))
 
-    # --------------------------------------------------
-    # STEP-7 Column Detection (CLASS BASED)
-    # --------------------------------------------------
+
     print("STEP-7: Detect columns")
 
     column_detector = ColumnDetector(
@@ -118,10 +84,8 @@ def test_step8():
     print("Columns detected:", len(columns))
     print(columns)
 
-    # --------------------------------------------------
-    # STEP-8 Logical Row Reconstruction
-    # --------------------------------------------------
-    print("STEP-8: Logical row reconstruction")
+
+    print("STEP-8: row reconstruction")
 
     builder = LogicalRowBuilder()
 
@@ -131,11 +95,10 @@ def test_step8():
         columns=columns
     )
 
-    print("Logical rows detected:", len(logical_rows))
+    print("rows detected:", len(logical_rows))
 
-    # --------------------------------------------------
     # Visualization (debug)
-    # --------------------------------------------------
+
     vis_img = table_img.copy()
 
     # draw candidate rows (blue)
@@ -173,13 +136,11 @@ def test_step8():
         )
 
 
-    output_path = os.path.join(OUTPUT_DIR, "step8_logical_rows.png")
+    output_path = os.path.join(OUTPUT_DIR, "step8_rows.png")
 
     cv2.imwrite(output_path, vis_img)
 
     print("Visualization saved:", output_path)
-
-    print("Pipeline completed successfully up to STEP-8")
 
 
 if __name__ == "__main__":
