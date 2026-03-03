@@ -1,119 +1,68 @@
-
 # import numpy as np
 
 # class LogicalRowBuilder:
-#     """
-#     Convert candidate row segments into logical rows.
-
-#     Handles:
-#     - multiline descriptions
-#     - borderless tables
-#     - generic invoice layouts
-#     """
-
-#     def __init__(self, numeric_column_threshold=2):
-#         """
-#         numeric_column_threshold:
-
-#         minimum number of numeric columns required
-#         to consider a row as a NEW logical row.
-#         """
-
-#         self.numeric_column_threshold = numeric_column_threshold
-
-#     # --------------------------------------------------
-#     # Assign each word to closest column anchor
-#     # --------------------------------------------------
 
 #     def assign_columns(self, words, columns):
+#         """
+#         Assign each OCR word to nearest column center.
+#         """
+
+#         # Safety check
+#         if not columns:
+#             print("WARNING: No columns detected — skipping logical reconstruction")
+#             return []
+
+#         column_centers = []
+
+#         for col in columns:
+#             # assume column is vertical line x-position
+#             column_centers.append(col)
 
 #         for w in words:
-#             center_x = (w["x1"] + w["x2"]) / 2
 
-#             # find nearest column anchor
-#             distances = [abs(center_x - c) for c in columns]
+#             # calculate word center
+#             cx = (w["x1"] + w["x2"]) / 2
+
+#             distances = [abs(cx - c) for c in column_centers]
+
+#             # safety: avoid empty list crash
+#             if not distances:
+#                 continue
+
 #             col_idx = int(np.argmin(distances))
-
-#             w["column_id"] = col_idx
+#             w["column"] = col_idx
 
 #         return words
 
-#     # --------------------------------------------------
-#     # Check if row contains numeric content
-#     # --------------------------------------------------
+#     def build_logical_rows(self, words, rows, columns):
+#         """
+#         Combine words into structured logical rows.
+#         """
 
-#     def is_numeric_text(self, text):
+#         # Safety guard
+#         if not columns:
+#             print("WARNING: No columns detected — skipping logical reconstruction")
+#             return []
 
-#         if text is None:
-#             return False
-
-#         # simple numeric detection
-#         return any(char.isdigit() for char in text)
-
-#     def count_numeric_columns(self, row_words):
-
-#         numeric_cols = set()
-
-#         for w in row_words:
-#             if self.is_numeric_text(w["text"]):
-#                 numeric_cols.add(w["column_id"])
-
-#         return len(numeric_cols)
-
-#     # --------------------------------------------------
-#     # Main build function
-#     # --------------------------------------------------
-
-#     def build_logical_rows(self, row_segments, words, columns):
-
-#         # assign columns first
 #         words = self.assign_columns(words, columns)
 
 #         logical_rows = []
-#         current_row = None
 
-#         # group words by row segment
-#         for seg in row_segments:
+#         for row in rows:
 
-#             seg_words = []
+#             row_words = []
 
 #             for w in words:
-#                 center_y = (w["y1"] + w["y2"]) / 2
+#                 cy = (w["y1"] + w["y2"]) / 2
 
-#                 if seg["y1"] <= center_y <= seg["y2"]:
-#                     seg_words.append(w)
+#                 # check if word belongs inside row bounds
+#                 if row["y1"] <= cy <= row["y2"]:
+#                     row_words.append(w)
 
-#             numeric_count = self.count_numeric_columns(seg_words)
+#             # sort by column index
+#             row_words.sort(key=lambda x: x.get("column", 0))
 
-#             # ----------------------------------
-#             # New logical row condition
-#             # ----------------------------------
-
-#             if numeric_count >= self.numeric_column_threshold:
-
-#                 # start new logical row
-#                 if current_row:
-#                     logical_rows.append(current_row)
-
-#                 current_row = {
-#                     "segments": [seg],
-#                     "words": seg_words.copy()
-#                 }
-
-#             else:
-#                 # continuation of previous row
-#                 if current_row:
-#                     current_row["segments"].append(seg)
-#                     current_row["words"].extend(seg_words)
-#                 else:
-#                     # fallback if first row
-#                     current_row = {
-#                         "segments": [seg],
-#                         "words": seg_words.copy()
-#                     }
-
-#         if current_row:
-#             logical_rows.append(current_row)
+#             logical_rows.append(row_words)
 
 #         return logical_rows
 
@@ -122,75 +71,125 @@
 
 
 
-
-#-------------------------------------------------
+#  -------------------------------
 # structure/logical_row_builder.py
 
-import numpy as np
+import re
 
 
 class LogicalRowBuilder:
+    """
+    Fully Generic Structural Logical Row Builder.
 
-    def assign_columns(self, words, columns):
+    Compatible with row_segments format:
+    {
+        "y1": int,
+        "y2": int,
+        "words": [ ... ],
+        "row_id": int
+    }
+
+    Uses structural identifier detection only.
+    No column-name dependency.
+    """
+
+    def __init__(self):
+        pass
+
+    # ---------------------------------------------------------
+    # STEP-8 MAIN FUNCTION
+    # ---------------------------------------------------------
+    def build_logical_rows(self, words, row_segments, columns):
         """
-        Assign each OCR word to nearest column center.
-        """
-
-        # Safety check
-        if not columns:
-            print("WARNING: No columns detected — skipping logical reconstruction")
-            return []
-
-        column_centers = []
-
-        for col in columns:
-            # assume column is vertical line x-position
-            column_centers.append(col)
-
-        for w in words:
-
-            # calculate word center
-            cx = (w["x1"] + w["x2"]) / 2
-
-            distances = [abs(cx - c) for c in column_centers]
-
-            # safety: avoid empty list crash
-            if not distances:
-                continue
-
-            col_idx = int(np.argmin(distances))
-            w["column"] = col_idx
-
-        return words
-
-    def build_logical_rows(self, words, rows, columns):
-        """
-        Combine words into structured logical rows.
+        Build logical rows from physical row segments
+        and merge continuation rows structurally.
         """
 
-        # Safety guard
-        if not columns:
-            print("WARNING: No columns detected — skipping logical reconstruction")
-            return []
+        # Step-1: Extract physical rows directly
+        physical_rows = []
 
-        words = self.assign_columns(words, columns)
+        for seg in row_segments:
 
-        logical_rows = []
+            row_words = seg.get("words", [])
 
-        for row in rows:
+            # Sort words left-to-right
+            row_words = sorted(row_words, key=lambda x: x["x1"])
 
-            row_words = []
+            physical_rows.append(row_words)
 
-            for w in words:
-                cy = (w["y1"] + w["y2"]) / 2
-
-                # check if word belongs inside row bounds
-                if row["y1"] <= cy <= row["y2"]:
-                    row_words.append(w)
-
-            # sort by column index
-            row_words.sort(key=lambda x: x.get("column", 0))
-
-            logical_rows.append(row_words)
+        # Step-2: Apply structural merge
+        logical_rows = self.merge_structural_rows(physical_rows)
 
         return logical_rows
+
+    # ---------------------------------------------------------
+    # STRUCTURAL MERGE
+    # ---------------------------------------------------------
+    def merge_structural_rows(self, rows):
+
+        if not rows:
+            return rows
+
+        merged = []
+        current_row = rows[0]
+
+        for next_row in rows[1:]:
+
+            if self.starts_new_record(next_row):
+                merged.append(current_row)
+                current_row = next_row
+            else:
+                current_row = self.merge_rows(current_row, next_row)
+
+        merged.append(current_row)
+
+        return merged
+
+    # ---------------------------------------------------------
+    # NEW RECORD DETECTION (GENERIC)
+    # ---------------------------------------------------------
+    def starts_new_record(self, row):
+
+        if not row:
+            return False
+
+        # Find leftmost word in row
+        leftmost_word = min(row, key=lambda w: w["x1"])
+        text = leftmost_word.get("text", "").strip()
+
+        return self.looks_like_identifier(text)
+
+    # ---------------------------------------------------------
+    # IDENTIFIER PATTERN CHECK
+    # ---------------------------------------------------------
+    def looks_like_identifier(self, text):
+
+        if not text:
+            return False
+
+        patterns = [
+            r"^\d+$",               # 1
+            r"^\d+\.$",             # 1.
+            r"^[A-Za-z]\d+$",       # A123
+            r"^[A-Za-z]-\d+$",      # A-12
+            r"^\d+[A-Za-z]+$",      # 123A
+            # r"^[A-Za-z0-9\-]{1,10}$"  # generic short SKU/code
+        ]
+
+        for pattern in patterns:
+            if re.match(pattern, text):
+                return True
+
+        return False
+
+    # ---------------------------------------------------------
+    # MERGE TWO ROWS
+    # ---------------------------------------------------------
+    def merge_rows(self, row1, row2):
+
+        merged = row1.copy()
+
+        for w in row2:
+            merged.append(w)
+
+        return merged
