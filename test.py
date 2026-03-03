@@ -11,11 +11,12 @@ from structure.column_detector import ColumnDetector
 from structure.logical_row_builder import LogicalRowBuilder
 from structure.table_builder import TableBuilder
 from export.excel_exporter import ExcelExporter
+from metrics.confidence_analyzer import ConfidenceAnalyzer
 
 
 def test():
 
-    INPUT_IMAGE = "test_images/invoice4.jpg"
+    INPUT_IMAGE = "test_images/invoice2.jpg"
     # INPUT_IMAGE = "test_images/img1.jpg"
     OUTPUT_FILE = "test_outputs/invoice_output.xlsx"
 
@@ -61,23 +62,6 @@ def test():
             if re.match(p, text.strip()):
                 return True
         return False
-
-    # for w in words:
-    #     center_x = (w["x1"] + w["x2"]) / 2
-    #     distances = [abs(center_x - c) for c in columns]
-
-    #     if not distances:
-    #         continue
-
-    #     col_idx = distances.index(min(distances))
-
-    #     if col_idx == 0:
-    #         if not looks_like_identifier(w.get("text", "")):
-    #             if len(columns) > 1:
-    #                 col_idx = 1
-
-    #     w["col"] = col_idx
-
 
     for w in words:
         center_x = (w["x1"] + w["x2"]) / 2
@@ -130,6 +114,27 @@ def test():
 
     print("Pipeline completed successfully up to STEP-10")
 
+    # STEP-11: Confidence Analysis
+
+    print("STEP-11: Confidence Analysis")
+
+    analyzer = ConfidenceAnalyzer()
+
+    metrics = analyzer.analyze(
+        words=words,
+        logical_rows=logical_rows,
+        table_matrix=table,
+        columns=columns
+    )
+
+    print("\nExtraction Metrics Summary\n")
+
+    print("OCR Metrics:", metrics["ocr_metrics"])
+    print("Structure Metrics:", metrics["structure_metrics"])
+    print("Completeness Metrics:", metrics["completeness_metrics"])
+    print("Numeric Metrics:", metrics["numeric_metrics"])
+    print("Overall Score:", metrics["overall_score"])
+    print("Status:", metrics["status"])
 
 if __name__ == "__main__":
     test()
