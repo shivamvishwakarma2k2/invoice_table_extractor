@@ -17,13 +17,13 @@ from table_extraction.table_selector import select_main_table
 from ocr.ocr_engine import run_ocr
 
 # STEP-5 line detection
-from structure.line_detector import detect_table_lines
+from table_structure.line_detector import detect_table_lines
 
 # STEP-6 row detection
-from structure.row_detector import detect_rows
+from table_structure.row_detector import detect_rows
 
 # STEP-7 column detection (class-based)
-from structure.column_detector import ColumnDetector
+from table_structure.column_detector import ColumnDetector
 
 # STEP-8 logical row reconstruction
 from structure.logical_row_builder import LogicalRowBuilder
@@ -32,7 +32,7 @@ from structure.logical_row_builder import LogicalRowBuilder
 from structure.table_builder import TableBuilder
 
 
-def test():
+def test_step9():
 
     INPUT_IMAGE = "test_images/invoice1.jpg"
 
@@ -77,28 +77,15 @@ def test():
 
     print("Columns detected:", len(columns))
 
-    # Assign column index to each word
-    for w in words:
-
-        center_x = (w["x1"] + w["x2"]) / 2
-
-        distances = [abs(center_x - c) for c in columns]
-
-        if distances:
-            col_idx = distances.index(min(distances))
-            w["col"] = col_idx
-        print("STEP-8: Logical row reconstruction")
-        row_builder = LogicalRowBuilder()
-        logical_rows = row_builder.build_logical_rows(
-            words,
-            rows,
-            columns
-        )
+    print("STEP-8: Logical row reconstruction")
+    row_builder = LogicalRowBuilder()
+    logical_rows = row_builder.build_logical_rows(
+        words,
+        rows,
+        columns
+    )
 
     print("Logical rows:", len(logical_rows))
-
-    print("Sample word from first logical row:")
-    print(logical_rows[0][0])
 
     print("STEP-9: Table matrix construction")
     table_builder = TableBuilder()
@@ -116,4 +103,4 @@ def test():
 
 
 if __name__ == "__main__":
-    test()
+    test_step9()
