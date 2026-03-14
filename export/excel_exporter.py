@@ -1,5 +1,3 @@
-# export/excel_exporter.py
-
 from openpyxl import Workbook
 
 

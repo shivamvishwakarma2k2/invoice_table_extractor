@@ -1,8 +1,26 @@
+import torch
+import streamlit as st
 from ultralytics import YOLO
+import ultralytics.nn.tasks
+
+torch.serialization.add_safe_globals(
+    [ultralytics.nn.tasks.DetectionModel]
+)
 
 # Load once when app starts
+# MODEL_PATH = "models\yolov8x-doclaynet-epoch64-imgsz640-initiallr1e-4-finallr1e-5.pt"
+# model = YOLO(MODEL_PATH)
+
+
+@st.cache_resource
+def load_layout_model():
+    return YOLO(MODEL_PATH)
+
+
 MODEL_PATH = "models\yolov8x-doclaynet-epoch64-imgsz640-initiallr1e-4-finallr1e-5.pt"
-model = YOLO(MODEL_PATH)
+model = load_layout_model()
+
+
 
 
 class LayoutResult:

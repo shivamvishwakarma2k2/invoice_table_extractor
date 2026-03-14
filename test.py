@@ -16,8 +16,8 @@ from metrics.confidence_analyzer import ConfidenceAnalyzer
 
 def test():
 
-    INPUT_IMAGE = "test_images/invoice2.jpg"
-    # INPUT_IMAGE = "test_images/img1.jpg"
+    INPUT_IMAGE = "test_images/invoice6.jpg"
+    # INPUT_IMAGE = "test_images/img5.jpg"
     OUTPUT_FILE = "test_outputs/invoice_output.xlsx"
 
     os.makedirs("test_outputs", exist_ok=True)
