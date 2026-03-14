@@ -345,6 +345,9 @@ def is_numeric_word(text):
 
 def detect_alignment_rows(words):
 
+    if not words:
+        return []
+    
     words_sorted = sorted(words, key=lambda w: compute_center_y(w))
 
     heights = [w["y2"] - w["y1"] for w in words]
@@ -375,6 +378,9 @@ def detect_alignment_rows(words):
 
 def detect_anchor_rows(words):
 
+    if not words:
+        return []
+    
     anchors = [w for w in words if is_numeric_word(w["text"])]
 
     return detect_alignment_rows(anchors)

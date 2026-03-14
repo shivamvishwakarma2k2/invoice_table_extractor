@@ -1,15 +1,29 @@
-import cv2
+import streamlit as st
 from paddleocr import PaddleOCR
+import cv2
+
+@st.cache_resource
+def load_ocr_model():
+    return PaddleOCR(use_angle_cls=True, lang="en")
 
 
-# Initialize PaddleOCR in stable CPU mode
-# oneDNN / MKLDNN disabled for Windows stability
-ocr_model = PaddleOCR(
-    use_angle_cls=True,   # angle classification
-    lang='en',            # English OCR
-    # use_gpu=False,        # force CPU mode
-    enable_mkldnn=False   # disable oneDNN/MKLDNN backend
-)
+ocr_model = load_ocr_model()
+
+
+
+
+# import cv2
+# from paddleocr import PaddleOCR
+
+
+# # Initialize PaddleOCR in stable CPU mode
+# # oneDNN / MKLDNN disabled for Windows stability
+# ocr_model = PaddleOCR(
+#     use_angle_cls=True,   # angle classification
+#     lang='en',            # English OCR
+#     # use_gpu=False,        # force CPU mode
+#     enable_mkldnn=False   # disable oneDNN/MKLDNN backend
+# )
 
 
 def is_valid_word(word):
