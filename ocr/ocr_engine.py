@@ -1,10 +1,10 @@
-import streamlit as st
+import streamlit as st # type: ignore
 from paddleocr import PaddleOCR
 import cv2
 
 @st.cache_resource
 def load_ocr_model():
-    return PaddleOCR(use_angle_cls=True, lang="en")
+    return PaddleOCR(use_angle_cls=True, lang="en", show_log=False)
 
 
 ocr_model = load_ocr_model()

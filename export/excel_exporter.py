@@ -33,3 +33,59 @@ class ExcelExporter:
         wb.save(output_path)
 
         print(f"Excel file saved at: {output_path}")
+
+
+
+
+
+
+
+
+
+
+
+#  multip table to sperte excel sheet
+
+# from openpyxl import Workbook
+
+
+# class ExcelExporter:
+#     """
+#     Export multiple tables to a single Excel file
+#     Each table will be placed in a separate sheet
+#     """
+
+#     def __init__(self):
+#         pass
+
+
+#     def export_multiple_tables(self, tables, output_path):
+#         """
+#         Parameters
+#         ----------
+#         tables : list
+#             List of table matrices
+
+#         output_path : str
+#             Output Excel file path
+#         """
+
+#         wb = Workbook()
+
+#         # Remove default sheet
+#         wb.remove(wb.active)
+
+#         for idx, table in enumerate(tables):
+
+#             sheet_name = f"Table_{idx+1}"
+#             ws = wb.create_sheet(title=sheet_name)
+
+#             for row_idx, row in enumerate(table, start=1):
+
+#                 for col_idx, cell in enumerate(row, start=1):
+
+#                     ws.cell(row=row_idx, column=col_idx, value=cell)
+
+#         wb.save(output_path)
+
+#         print(f"Excel file saved at: {output_path}")
