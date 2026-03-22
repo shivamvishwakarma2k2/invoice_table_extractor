@@ -1,8 +1,8 @@
-# StructuRAI – Invoice Table Extraction System
+# DocuStruct – Automated Table Extraction and Structural Reconstruction System for Invoices
 
 ## Overview
 
-StructuRAI is a document processing system designed to extract structured tabular data from invoice images and PDF documents.
+DocuStruct is a document processing system designed to extract structured tabular data from invoice images and PDF documents.
 
 The system analyzes the layout of the document, identifies table regions, extracts textual content with positional information, reconstructs table rows and columns, and converts the extracted information into a structured dataset.
 
@@ -358,7 +358,3 @@ Possible enhancements include:
 
 Shivam Vishwakarma  
 M.Sc. IT – Semester Project
-
-Project Title:
-
-**StructuRAI – Invoice Table Extraction System**

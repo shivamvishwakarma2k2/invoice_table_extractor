@@ -1,5 +1,5 @@
 import torch
-import streamlit as st
+import streamlit as st # type: ignore
 from ultralytics import YOLO
 import ultralytics.nn.tasks
 
