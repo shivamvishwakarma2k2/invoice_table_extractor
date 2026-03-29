@@ -3,10 +3,7 @@ def select_main_table(layout):
     """
     Select main table from detected layout.
 
-    Strategy:
-    - choose table with largest height
-    - generic heuristic
-    - invoice-agnostic
+    Strategy: choose table with largest height
     """
 
     if not layout.tables:

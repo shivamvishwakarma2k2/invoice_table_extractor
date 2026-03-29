@@ -1,8 +1,6 @@
 import cv2
 import numpy as np
-from PIL import Image
 from pdf2image import convert_from_path
-import os
 
 def load_image(file_path):
     """
@@ -96,28 +94,3 @@ def preprocess_for_ocr(image):
     ocr_ready = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
 
     return ocr_ready
-
-
-
-# def remove_table_lines(binary_img):
-#     """
-#     Generic table-line removal for grid-based documents.
-#     Works for ANY invoice.
-#     """
-#     img = binary_img.copy()
-
-#     # Vertical lines
-#     vertical_kernel = cv2.getStructuringElement(
-#         cv2.MORPH_RECT, (1, img.shape[0] // 30)
-#     )
-#     vertical_lines = cv2.morphologyEx(img, cv2.MORPH_OPEN, vertical_kernel)
-#     img = cv2.subtract(img, vertical_lines)
-
-#     # Horizontal lines
-#     horizontal_kernel = cv2.getStructuringElement(
-#         cv2.MORPH_RECT, (img.shape[1] // 30, 1)
-#     )
-#     horizontal_lines = cv2.morphologyEx(img, cv2.MORPH_OPEN, horizontal_kernel)
-#     img = cv2.subtract(img, horizontal_lines)
-
-#     return img

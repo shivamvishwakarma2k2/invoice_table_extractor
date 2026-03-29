@@ -7,9 +7,7 @@ class TableBuilder:
     def __init__(self):
         pass
 
-    # --------------------------------------------------
     # Build table matrix
-    # --------------------------------------------------
     def build_table(self, logical_rows, column_count):
         """
         Convert logical rows into table matrix.

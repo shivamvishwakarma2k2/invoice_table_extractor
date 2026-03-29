@@ -1,195 +1,108 @@
-# import numpy as np
-
-# class LogicalRowBuilder:
-
-#     def assign_columns(self, words, columns):
-#         """
-#         Assign each OCR word to nearest column center.
-#         """
-
-#         # Safety check
-#         if not columns:
-#             print("WARNING: No columns detected — skipping logical reconstruction")
-#             return []
-
-#         column_centers = []
-
-#         for col in columns:
-#             # assume column is vertical line x-position
-#             column_centers.append(col)
-
-#         for w in words:
-
-#             # calculate word center
-#             cx = (w["x1"] + w["x2"]) / 2
-
-#             distances = [abs(cx - c) for c in column_centers]
-
-#             # safety: avoid empty list crash
-#             if not distances:
-#                 continue
-
-#             col_idx = int(np.argmin(distances))
-#             w["column"] = col_idx
-
-#         return words
-
-#     def build_logical_rows(self, words, rows, columns):
-#         """
-#         Combine words into structured logical rows.
-#         """
-
-#         # Safety guard
-#         if not columns:
-#             print("WARNING: No columns detected — skipping logical reconstruction")
-#             return []
-
-#         words = self.assign_columns(words, columns)
-
-#         logical_rows = []
-
-#         for row in rows:
-
-#             row_words = []
-
-#             for w in words:
-#                 cy = (w["y1"] + w["y2"]) / 2
-
-#                 # check if word belongs inside row bounds
-#                 if row["y1"] <= cy <= row["y2"]:
-#                     row_words.append(w)
-
-#             # sort by column index
-#             row_words.sort(key=lambda x: x.get("column", 0))
-
-#             logical_rows.append(row_words)
-
-#         return logical_rows
-
-
-
-
-
-
-#  -------------------------------
-# structure/logical_row_builder.py
-
-import re
-
-
 class LogicalRowBuilder:
     """
-    Fully Generic Structural Logical Row Builder.
+    Improved Logical Row Builder
 
-    Compatible with row_segments format:
-    {
-        "y1": int,
-        "y2": int,
-        "words": [ ... ],
-        "row_id": int
-    }
-
-    Uses structural identifier detection only.
-    No column-name dependency.
+    Features:
+    - Works without identifier column
+    - Handles multi-line descriptions
+    - Uses semantic + structural merging
+    - Compatible with new row detector
     """
 
     def __init__(self):
         pass
 
-    # ---------------------------------------------------------
-    # STEP-8 MAIN FUNCTION
-    # ---------------------------------------------------------
     def build_logical_rows(self, words, row_segments, columns):
         """
-        Build logical rows from physical row segments
-        and merge continuation rows structurally.
+        row_segments = list of rows (list of words)
         """
 
-        # Step-1: Extract physical rows directly
+        if not row_segments:
+            return []
+
+        # Step-1: sort each row left → right
         physical_rows = []
 
-        for seg in row_segments:
 
-            row_words = seg.get("words", [])
+        for row in row_segments:
 
-            # Sort words left-to-right
-            row_words = sorted(row_words, key=lambda x: x["x1"])
+            # Ensure row contains valid word dicts
+            clean_row = []
 
-            physical_rows.append(row_words)
+            for w in row:
+                if isinstance(w, dict) and "x1" in w:
+                    clean_row.append(w)
 
-        # Step-2: Apply structural merge
-        logical_rows = self.merge_structural_rows(physical_rows)
+            if not clean_row:
+                continue
+
+            sorted_row = sorted(clean_row, key=lambda w: w["x1"])
+            physical_rows.append(sorted_row)
+
+
+
+
+        # Step-2: merge intelligently
+        logical_rows = self.merge_rows(physical_rows)
 
         return logical_rows
 
-    # ---------------------------------------------------------
-    # STRUCTURAL MERGE
-    # ---------------------------------------------------------
-    def merge_structural_rows(self, rows):
-
-        if not rows:
-            return rows
+    # SMART MERGE LOGIC (CORE)
+    def merge_rows(self, rows):
 
         merged = []
-        current_row = rows[0]
 
-        for next_row in rows[1:]:
+        for row in rows:
 
-            if self.starts_new_record(next_row):
-                merged.append(current_row)
-                current_row = next_row
+            if not merged:
+                merged.append(row)
+                continue
+
+            prev_row = merged[-1]
+
+
+            if self.is_continuation(prev_row, row):
+
+                combined = prev_row + row
+
+                combined = [w for w in combined if isinstance(w, dict)]
+
+                merged[-1] = combined
             else:
-                current_row = self.merge_rows(current_row, next_row)
+                merged.append(row)
 
-        merged.append(current_row)
 
         return merged
 
-    # ---------------------------------------------------------
-    # NEW RECORD DETECTION (GENERIC)
-    # ---------------------------------------------------------
-    def starts_new_record(self, row):
+    # CONTINUATION DETECTION 
+    def is_continuation(self, prev_row, curr_row):
 
-        if not row:
+        if not curr_row:
             return False
 
-        # Find leftmost word in row
-        leftmost_word = min(row, key=lambda w: w["x1"])
-        text = leftmost_word.get("text", "").strip()
+        # Check if current row has numeric values
+        has_number = any(
+            isinstance(w, dict) and w.get("type") in ["number", "integer"]
+            for w in curr_row
+        )
 
-        return self.looks_like_identifier(text)
 
-    # ---------------------------------------------------------
-    # IDENTIFIER PATTERN CHECK
-    # ---------------------------------------------------------
-    def looks_like_identifier(self, text):
+        # Check vertical gap
+        prev_bottom = max(w["y2"] for w in prev_row if isinstance(w, dict))
+        curr_top = min(w["y1"] for w in curr_row if isinstance(w, dict))
 
-        if not text:
-            return False
+        vertical_gap = abs(curr_top - prev_bottom)
 
-        patterns = [
-            r"^\d+$",               # 1
-            r"^\d+\.$",             # 1.
-            r"^[A-Za-z]\d+$",       # A123
-            r"^[A-Za-z]-\d+$",      # A-12
-            r"^\d+[A-Za-z]+$",      # 123A
-            # r"^[A-Za-z0-9\-]{1,10}$"  # generic short SKU/code
-        ]
+        avg_height = sum((w["y2"] - w["y1"]) for w in prev_row) / len(prev_row)
 
-        for pattern in patterns:
-            if re.match(pattern, text):
-                return True
+        # RULES
+
+        # Rule-1: No numbers → likely continuation
+        if not has_number:
+            return True
+
+        # Rule-2: Very close vertically → continuation
+        if vertical_gap < avg_height * 0.6:
+            return True
 
         return False
-
-    # ---------------------------------------------------------
-    # MERGE TWO ROWS
-    # ---------------------------------------------------------
-    def merge_rows(self, row1, row2):
-
-        merged = row1.copy()
-
-        for w in row2:
-            merged.append(w)
-
-        return merged

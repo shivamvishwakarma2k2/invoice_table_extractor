@@ -1,31 +1,12 @@
-# ==========================================================
-# File: metrics/confidence_analyzer.py
-# Purpose:
-#   Compute extraction confidence and quality metrics
-#   for invoice table extraction pipeline.
-#
-# Inputs:
-#   - words (OCR output)
-#   - logical_rows (after merge)
-#   - table_matrix (final structured table)
-#   - columns (detected column centers)
-#
-# Output:
-#   Dictionary containing detailed metrics + overall score
-# ==========================================================
-
 import re
 import numpy as np
-
 
 class ConfidenceAnalyzer:
 
     def __init__(self):
         pass
 
-    # ------------------------------------------------------
     # OCR METRICS
-    # ------------------------------------------------------
     def compute_ocr_metrics(self, words):
 
         if not words:
@@ -49,9 +30,7 @@ class ConfidenceAnalyzer:
             "total_words": len(words)
         }
 
-    # ------------------------------------------------------
     # STRUCTURAL METRICS
-    # ------------------------------------------------------
     def compute_structure_metrics(self, logical_rows, columns):
 
         return {
@@ -59,9 +38,7 @@ class ConfidenceAnalyzer:
             "column_count": len(columns)
         }
 
-    # ------------------------------------------------------
     # DATA COMPLETENESS METRICS
-    # ------------------------------------------------------
     def compute_completeness_metrics(self, table_matrix):
 
         if not table_matrix:
@@ -88,9 +65,7 @@ class ConfidenceAnalyzer:
             "empty_cell_ratio": round(empty_ratio, 4)
         }
 
-    # ------------------------------------------------------
     # NUMERIC CONSISTENCY METRICS
-    # ------------------------------------------------------
     def compute_numeric_consistency(self, table_matrix):
 
         numeric_pattern = re.compile(r"^[\d.,]+%?$")
@@ -111,9 +86,7 @@ class ConfidenceAnalyzer:
             "numeric_cells": numeric_cells
         }
 
-    # ------------------------------------------------------
     # OVERALL SCORE
-    # ------------------------------------------------------
     def compute_overall_score(
         self,
         ocr_metrics,
@@ -137,9 +110,7 @@ class ConfidenceAnalyzer:
 
         return round(overall, 4)
 
-    # ------------------------------------------------------
     # MAIN ANALYSIS FUNCTION
-    # ------------------------------------------------------
     def analyze(self, words, logical_rows, table_matrix, columns):
 
         ocr_metrics = self.compute_ocr_metrics(words)
