@@ -1,5 +1,6 @@
-import streamlit as st # type: ignore
+import streamlit as st
 from datetime import datetime
+
 
 class AppLogger:
     def __init__(self):
@@ -10,11 +11,13 @@ class AppLogger:
         timestamp = datetime.now().strftime("%H:%M:%S")
         formatted = f"[{timestamp}] {message}"
 
-        # Store in UI
+        # Ensure exists
+        if "logs" not in st.session_state:
+            st.session_state["logs"] = []
+
         st.session_state["logs"].append(formatted)
 
-        # Print to console
-        # print(formatted)
+        print(formatted)
 
     def clear(self):
         st.session_state["logs"] = []

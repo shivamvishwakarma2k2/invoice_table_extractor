@@ -1,17 +1,12 @@
 import os
 import tempfile
 import time
-import re
 
-from preprocessing.image_cleaner import preprocess_for_ocr
 from layout_detection.layout_model import detect_layout
 from table_extraction.extractor import extract_clean_table
-from table_extraction.table_selector import select_main_table
-from ocr.ocr_engine import run_ocr
-from structure.row_detector import detect_rows
-from structure.column_detector import ColumnDetector
-from structure.logical_row_builder import LogicalRowBuilder
-from structure.table_builder import TableBuilder
+
+from pipeline.hybrid_table_extractor import HybridTableExtractor
+from postprocessing.table_cleaner import TableCleaner
 from export.excel_exporter import ExcelExporter
 from metrics.confidence_analyzer import ConfidenceAnalyzer
 
@@ -19,197 +14,228 @@ from utlis.logger import AppLogger
 
 logger = AppLogger()
 
-def looks_like_identifier(text):
-    """
-    Check if text looks like row identifier (No., 1., 12 etc)
-    """
-    patterns = [
-        r"^\d+$",
-        r"^\d+\.$",
-        r"^[A-Za-z]\d+$",
-        r"^[A-Za-z]-\d+$",
-        r"^\d+[A-Za-z]+$"
-    ]
-    for p in patterns:
-        if re.match(p, text.strip()):
-            return True
-    return False
-
-
 
 def run_application(image):
 
     try:
-        print("\n")
         start_time = time.time()
-        logger.log("Starting table extraction ...")
+        logger.clear()
 
-        # STEP-1: Detect Layout
-        print("\nSTEP-1: Detect Layout")
-        logger.log("Detect layout - Detecting document layout and table regions...")
+        logger.log("Execution started")
+
+        # Layout Detection
+        logger.log("Layout Detection")
         layout = detect_layout(image)
 
         if not layout or not layout.has_table:
-            return {
-                "error": "No table detected in the uploaded document.",
-                "error_type": "no_table"
-            }
+            logger.log("No table detected in document")
+            return {"error": "No table detected in the document."}
 
-        # STEP-2: Select Main Table
-        print("\nSTEP-2: Select Main Table")
-        logger.log("Select main table")
+        tables = layout.tables
+        logger.log(f"Tables detected: {len(tables)}")
 
-        main_table = select_main_table(layout)
+        extractor = HybridTableExtractor()
+        cleaner = TableCleaner()
+        analyzer = ConfidenceAnalyzer()
+        exporter = ExcelExporter()
 
-        if not main_table or "bbox" not in main_table:
-            return {
-                "error": "Unable to determine main table region.",
-                "error_type": "table_selection_failure"
-            }
+        all_tables = []
+        all_results = []
+        scores = []
 
-        table_img = extract_clean_table(image, main_table["bbox"])
+        # -----------------------------------
+        for idx, tbl in enumerate(tables):
 
-        if table_img is None or table_img.size == 0:
-            return {
-                "error": "Table extraction failed.",
-                "error_type": "table_extraction_failure"
-            }
+            logger.log(f"Processing table {idx + 1}")
 
-        # STEP-3: OCR
-        print("\nSTEP-3: OCR")
-        logger.log("OCR - Performing OCR on the extracted table region...")
-        ocr_ready = preprocess_for_ocr(table_img)
-        words = run_ocr(ocr_ready)
-
-        if not words:
-            return {
-                "error": "OCR could not detect readable text.",
-                "error_type": "ocr_failure"
-            }
-
-        print(f"OCR words detected: {len(words)}")
-
-        # STEP-4: Row Detection
-        print("\nSTEP-4: Row Detection")
-        logger.log("Row detection - Analyzing row structure...")
-        row_segments = detect_rows(words)
-
-        if not row_segments:
-            return {
-                "error": "Row detection failed. Table structure unclear.",
-                "error_type": "row_detection_failure"
-            }
-
-        print(f"Row segments: {len(row_segments)}")
-
-        # STEP-5: Column Detection
-        print("\nSTEP-5: Column Detection")
-        logger.log("Column detection - Identifying column boundaries...")
-        column_detector = ColumnDetector(eps=45, min_samples=4)
-        columns = column_detector.detect_columns(words)
-
-        if not columns:
-            return {
-                "error": "Column detection failed.",
-                "error_type": "column_detection_failure"
-            }
-
-        print(f"Columns detected: {len(columns)}")
-
-        # Assign Columns Safely
-        for w in words:
-
-            center_x = (w["x1"] + w["x2"]) / 2
-            distances = [abs(center_x - c) for c in columns]
-
-            if not distances:
+            if "bbox" not in tbl:
+                logger.log("Bounding box missing, skipping table")
                 continue
 
-            col_idx = distances.index(min(distances))
-            text = w.get("text", "")
+            table_img = extract_clean_table(image, tbl["bbox"])
 
-            if col_idx == 0:
-                if not looks_like_identifier(text):
-                    if text.lower() not in ["no.", "no", "item", "sr", "sr."]:
-                        if len(columns) > 1:
-                            col_idx = 1
+            if table_img is None or table_img.size == 0:
+                logger.log("Table image extraction failed")
+                continue
 
-            w["col"] = col_idx
+            # EXTRACTION
+            logger.log("Table Extraction")
 
-        # STEP-6: Logical Row Reconstruction
-        print("\nSTEP-6: Logical Row Reconstruction")
-        logger.log("Logical row reconstruction - Reconstructing logical rows...")
-        row_builder = LogicalRowBuilder()
-        logical_rows = row_builder.build_logical_rows(
-            words,
-            row_segments,
-            columns
-        )
+            result = extractor.extract(table_img)
 
-        if not logical_rows:
-            return {
-                "error": "Logical row reconstruction failed.",
-                "error_type": "logical_row_failure"
-            }
+            if not result:
+                logger.log("Extraction failed for table")
+                continue
 
-        print(f"Logical rows: {len(logical_rows)}")
+            engine = result.get("engine")
+            if not engine:
+                engine = "custom"
 
-        # STEP-7: Table Matrix Construction
-        print("\nSTEP-7: Table Matrix Construction")
-        logger.log("Table matrix construction - Building table from logical rows...")
-        table_builder = TableBuilder()
-        table = table_builder.build_table(
-            logical_rows=logical_rows,
-            column_count=len(columns)
-        )
+            logger.log(f"Extraction engine used: {engine}")
 
-        if not table:
-            return {
-                "error": "Final table construction failed.",
-                "error_type": "table_build_failure"
-            }
+            table = result.get("table", [])
+            words = result.get("words", [])
+            columns = result.get("columns", [])
+            logical_rows = result.get("logical_rows", [])
 
-        # STEP-8: Export to Excel
-        print("\nSTEP-8: Export to Excel")
-        logger.log("Export to Excel")
+            # LOG EXTRACTION DETAILS
+            logger.log("OCR Processing")
+            logger.log(f"OCR words detected: {len(words)}")
+
+            logger.log("Row Detection")
+            logger.log(f"Row segments detected: {len(logical_rows)}")
+
+            logger.log("Column Detection")
+            logger.log(f"Columns detected: {len(columns)}")
+
+            if not table:
+                logger.log("Empty table extracted")
+                continue
+
+            # CLEANING
+            logger.log("Table Construction")
+
+            table = cleaner.clean(table)
+
+            max_cols = max(len(r) for r in table)
+
+            for r in table:
+                r.extend([""] * (max_cols - len(r)))
+
+            logger.log(f"Table size: {len(table)} rows x {max_cols} columns")
+
+            # METRICS
+            logger.log("Confidence Analysis")
+
+            metrics = analyzer.analyze(
+                words=words,
+                logical_rows=logical_rows if logical_rows else table,
+                table_matrix=table,
+                columns=columns if columns else list(range(max_cols))
+            )
+
+
+
+            if "pp_structure" in engine:
+
+                completeness = 1 - metrics["completeness_metrics"]["empty_cell_ratio"]
+
+                # STRUCTURE QUALITY
+                row_count = metrics["structure_metrics"]["logical_row_count"]
+                col_count = metrics["structure_metrics"]["column_count"]
+
+                structure_score = 1.0
+
+                if row_count < 2:
+                    structure_score *= 0.5
+
+                if col_count < 2:
+                    structure_score *= 0.5
+
+                # CONTENT CONSISTENCY
+                numeric_ratio = metrics["numeric_metrics"]["numeric_cell_ratio"]
+
+                # Ideal numeric ratio range (invoice tables)
+                if numeric_ratio < 0.05:
+                    consistency_score = 0.5
+                elif numeric_ratio > 0.9:
+                    consistency_score = 0.7
+                else:
+                    consistency_score = 1.0
+
+                # FINAL SCORE (NO OCR) for PP structure-based tables
+                final_score = (
+                    0.45 * completeness +
+                    0.265 * structure_score +
+                    0.258 * consistency_score
+                )
+
+                metrics["overall_score"] = round(final_score, 4)
+
+                # STATUS
+                if final_score > 0.9:
+                    metrics["status"] = "High Reliability"
+                elif final_score > 0.75:
+                    metrics["status"] = "Medium Reliability"
+                else:
+                    metrics["status"] = "Low Reliability"
+
+
+            # LOG METRICS for Custom engine
+            logger.log("OCR Metrics")
+            logger.log(str(metrics["ocr_metrics"]))
+
+            logger.log("Structure Metrics")
+            logger.log(str(metrics["structure_metrics"]))
+
+            logger.log("Completeness Metrics")
+            logger.log(str(metrics["completeness_metrics"]))
+
+            logger.log("Numeric Metrics")
+            logger.log(str(metrics["numeric_metrics"]))
+
+            logger.log(f"Overall Score: {metrics['overall_score']}")
+            logger.log(f"Status: {metrics['status']}")
+
+            scores.append(metrics["overall_score"])
+            all_tables.append(table)
+
+            all_results.append({
+                "table": table,
+                "metrics": metrics,
+                "engine": engine 
+            })
+
+        # VALIDATION
+        if not all_tables:
+            logger.log("No valid structured tables generated")
+            return {"error": "No structured tables could be extracted."}
+
+        # AGGREGATION
+        logger.log("Result Aggregation")
+
+        avg_score = sum(scores) / len(scores)
+
+        combined_metrics = {
+            "table_count": len(all_tables),
+            "average_score": round(avg_score, 4),
+            "status": (
+                "High Reliability" if avg_score > 0.9 else
+                "Medium Reliability" if avg_score > 0.75 else
+                "Low Reliability"
+            ),
+            "processing_time_sec": round(time.time() - start_time, 2)
+        }
+
+        logger.log(f"Total tables processed: {len(all_tables)}")
+        logger.log(f"Average score: {combined_metrics['average_score']}")
+        logger.log(f"Final status: {combined_metrics['status']}")
+
+        # EXPORT
+        logger.log("Excel Export")
+
         temp_dir = tempfile.gettempdir()
         excel_path = os.path.join(temp_dir, "output.xlsx")
 
-        exporter = ExcelExporter()
-        exporter.export(table, excel_path)
+        exporter.export_multiple(all_tables, excel_path)
 
-        # STEP-9: Confidence Analysis
-        print("\nSTEP-9: Confidence Analysis")
-        logger.log("Confidence Analysis...")
+        logger.log("Excel file generated successfully")
+        logger.log("Execution completed")
 
-        analyzer = ConfidenceAnalyzer()
-
-        metrics = analyzer.analyze(
-            words=words,
-            logical_rows=logical_rows,
-            table_matrix=table,
-            columns=columns
-        )
-
-        metrics["processing_time_sec"] = round(
-            time.time() - start_time, 2
-        )
+        print("\n")
 
         return {
-            "table": table,
-            "metrics": metrics,
+            "table": all_tables[0],
             "excel_path": excel_path,
-            "logical_rows": logical_rows,
-            "columns": columns,
-            "table_image": table_img
+            "metrics": combined_metrics,
+            "all_tables_metrics": all_results
         }
 
     except Exception as e:
 
-        print(f"System failed: {str(e)}")
+        logger.log(f"System error: {str(e)}")
 
         return {
             "error": "Unexpected system error occurred.",
-            "error_type": "system_error",
             "details": str(e)
         }

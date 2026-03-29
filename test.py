@@ -36,10 +36,10 @@ def test():
 
     os.makedirs("test_outputs", exist_ok=True)
 
-    print("STEP-1: Load image")
+    print("Load image")
     image = load_image(INPUT_IMAGE)
 
-    print("STEP-2: Detect layout")
+    print("Detect layout")
     layout = detect_layout(image)
 
     if not layout.has_table:
@@ -55,14 +55,12 @@ def test():
 
     for idx, table in enumerate(detected_tables):
 
-        print(f"\n==============================")
         print(f"Processing Table {idx+1}")
-        print(f"==============================")
 
         table_img = extract_clean_table(image, table["bbox"])
 
         # STEP-3 OCR
-        print("STEP-3: OCR")
+        print("OCR")
 
         ocr_ready = preprocess_for_ocr(table_img)
         words = run_ocr(ocr_ready)
@@ -70,14 +68,14 @@ def test():
         print(f"OCR words detected: {len(words)}")
 
         # STEP-4 Row detection
-        print("STEP-4: Row detection")
+        print("Row detection")
 
         row_segments = detect_rows(words)
 
         print(f"Row segments: {len(row_segments)}")
 
         # STEP-5 Column detection
-        print("STEP-5: Column detection")
+        print("Column detection")
 
         column_detector = ColumnDetector(eps=45, min_samples=4)
         columns = column_detector.detect_columns(words)
@@ -108,7 +106,7 @@ def test():
             w["col"] = col_idx
 
         # STEP-6 Logical row reconstruction
-        print("STEP-6: Logical row reconstruction")
+        print("Logical row reconstruction")
 
         row_builder = LogicalRowBuilder()
 
@@ -121,7 +119,7 @@ def test():
         print(f"Logical rows: {len(logical_rows)}")
 
         # STEP-7 Table matrix
-        print("STEP-7: Table matrix construction")
+        print("Table matrix construction")
 
         table_builder = TableBuilder()
 
@@ -138,7 +136,7 @@ def test():
         all_table_matrices.append(table_matrix)
 
         # STEP-8 Metrics
-        print("\nSTEP-8: Confidence Analysis")
+        print("\nConfidence Analysis")
 
         metrics = analyzer.analyze(
             words=words,
@@ -158,7 +156,7 @@ def test():
 
 
     # STEP-9 Export all tables
-    print("\nSTEP-9: Export all tables to Excel")
+    print("\nExport all tables to Excel")
 
     exporter = ExcelExporter()
 
@@ -166,8 +164,6 @@ def test():
         all_table_matrices,
         OUTPUT_FILE
     )
-
-    print("\nPipeline completed successfully.")
 
 
 if __name__ == "__main__":
