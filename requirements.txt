@@ -6,6 +6,7 @@ pandas
 pillow
 opencv-python-headless
 
+huggingface_hub
 ultralytics
 
 paddleocr==2.7.0.3
