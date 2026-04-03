@@ -134,8 +134,6 @@ urllib3==2.6.3
 visualdl==2.5.3
 watchdog==6.0.0
 Werkzeug==3.1.5
-=======
 altair
 pandas
 streamlit
->>>>>>> 35ca3aebcf57bb7993ffc064a878c4937e6c27a3
