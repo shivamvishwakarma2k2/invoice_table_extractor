@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 altair==6.0.0
 annotated-doc==0.0.4
 anyio==4.12.1
