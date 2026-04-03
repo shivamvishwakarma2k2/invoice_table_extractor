@@ -1,25 +1,18 @@
-# Core
+# Filename: requirements.txt
+
 streamlit
-numpy
+numpy==1.24.4
 pandas
 pillow
-
-# OpenCV (headless for server)
 opencv-python-headless
 
-# YOLO
 ultralytics
 
-# OCR
 paddleocr==2.7.0.3
 paddlepaddle==2.6.2
 
-
-# PDF support
 pdf2image
-
-# Excel export
 openpyxl
 
-# Torch (CPU only - REQUIRED)
 torch==2.0.1
+dill
