@@ -11,7 +11,9 @@ opencv-python-headless
 ultralytics
 
 # OCR
-paddleocr
+paddleocr==2.7.0.3
+paddlepaddle==2.6.2
+
 
 # PDF support
 pdf2image
