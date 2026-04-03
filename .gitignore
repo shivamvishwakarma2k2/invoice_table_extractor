@@ -1,3 +1,9 @@
 models/*.pt
 venv/
 token-huggingface.txt
+test_images/
+test_outputs/
+*.jpg
+*.png
+*.jpeg
+*.xlsx
