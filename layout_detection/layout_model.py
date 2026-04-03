@@ -63,9 +63,9 @@ from huggingface_hub import hf_hub_download
 # ---------------------------------------------------
 # SAFE LOAD FIX (YOLO)
 # ---------------------------------------------------
-torch.serialization.add_safe_globals(
-    [ultralytics.nn.tasks.DetectionModel]
-)
+# torch.serialization.add_safe_globals(
+#     [ultralytics.nn.tasks.DetectionModel]
+# )
 
 # ---------------------------------------------------
 # CONFIG
