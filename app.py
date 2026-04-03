@@ -1,5 +1,5 @@
 import os
-import streamlit as st
+import streamlit as st # type: ignore
 import numpy as np
 import cv2
 from pdf2image import convert_from_bytes
@@ -13,7 +13,6 @@ if "logs" not in st.session_state:
     st.session_state["logs"] = []
 
 APP_TITLE = "DocuStruct"
-
 st.set_page_config(page_title=APP_TITLE, layout="wide")
 
 st.markdown("""
@@ -42,21 +41,15 @@ div.stButton > button:hover {
 </style>
 """, unsafe_allow_html=True)
 
-
 # SIDEBAR
 developer_mode = st.sidebar.toggle("Enable Developer Logs")
-
 
 # HEADER
 st.title(APP_TITLE)
 st.caption("Structured Table Extraction System for Business Documents")
 
-
 # TABS
-tab1, tab2, tab3, tab4 = st.tabs(
-    ["Upload Document", "Metrics", "Results", "Developer Logs"]
-)
-
+tab1, tab2, tab3, tab4 = st.tabs(["Upload Document", "Metrics", "Results", "Developer Logs"])
 
 # TAB 1 - UPLOAD
 with tab1:
@@ -98,7 +91,6 @@ with tab1:
         st.divider()
 
         st.image(preview_image, width=650, caption="Document Preview",)
-
 
 # TAB 2 - METRICS
 with tab2:
@@ -169,7 +161,6 @@ with tab2:
 
                     st.markdown("**Numeric Metrics**")
                     st.json(table_metrics.get("numeric_metrics", {}))
-
 
 # TAB 3 - RESULTS
 with tab3:
@@ -251,7 +242,6 @@ with tab3:
             file_name="DocuStruct_Result.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
-
 
 # TAB 4 - DEVELOPER LOGS 
 with tab4:

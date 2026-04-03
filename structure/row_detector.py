@@ -10,7 +10,7 @@ def is_anchor(text):
 
 def detect_rows(words):
     """
-    Anchor-based row detection (stable)
+    Anchor-based row detection
     """
 
     # Sort top to bottom
