@@ -6,6 +6,8 @@ from pdf2image import convert_from_bytes
 from app_entry import run_application
 from utlis.logger import AppLogger
 
+st.set_option('server.maxUploadSize', 200)  # increase limit (MB)
+
 logger = AppLogger()
 
 # Initialize logs
@@ -61,11 +63,23 @@ with tab1:
 
     if uploaded_file:
 
+        # Read file only ONCE
+        uploaded_bytes = uploaded_file.read()
+
         if uploaded_file.type == "application/pdf":
-            pdf_pages = convert_from_bytes(uploaded_file.read())
+            # pdf_pages = convert_from_bytes(uploaded_bytes)
+            # preview_image = cv2.cvtColor(np.array(pdf_pages[0]), cv2.COLOR_RGB2BGR)
+
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+                tmp.write(uploaded_bytes)
+                temp_path = tmp.name
+
+            pdf_pages = convert_from_bytes(open(temp_path, "rb").read())
             preview_image = cv2.cvtColor(np.array(pdf_pages[0]), cv2.COLOR_RGB2BGR)
+
+
         else:
-            file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
+            file_bytes = np.asarray(bytearray(uploaded_bytes), dtype=np.uint8)
             preview_image = cv2.imdecode(file_bytes, 1)
 
         st.session_state["preview_image"] = preview_image

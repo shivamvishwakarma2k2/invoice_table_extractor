@@ -1,4 +1,4 @@
-# Filename: Dockerfile
+# filename: Dockerfile
 
 FROM python:3.10-slim
 
@@ -18,8 +18,13 @@ COPY . .
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Expose port
+# Streamlit config (VERY IMPORTANT for HF Spaces)
+ENV STREAMLIT_SERVER_PORT=7860
+ENV STREAMLIT_SERVER_ADDRESS=0.0.0.0
+ENV STREAMLIT_SERVER_ENABLE_CORS=false
+ENV STREAMLIT_SERVER_ENABLE_XSRF_PROTECTION=false
+
 EXPOSE 7860
 
-# Run Streamlit app
-CMD ["streamlit", "run", "app.py", "--server.port=7860", "--server.address=0.0.0.0"]
+# Run app
+CMD ["streamlit", "run", "app.py"]
