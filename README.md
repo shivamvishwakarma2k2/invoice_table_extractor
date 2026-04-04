@@ -1,5 +1,5 @@
 ---
-title: DocuStruct
+title: DocuStruct                
 emoji: "📄"
 colorFrom: blue
 colorTo: indigo
