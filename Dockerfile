@@ -18,13 +18,14 @@ COPY . .
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Streamlit config (VERY IMPORTANT for HF Spaces)
-ENV STREAMLIT_SERVER_PORT=7860
-ENV STREAMLIT_SERVER_ADDRESS=0.0.0.0
-ENV STREAMLIT_SERVER_ENABLE_CORS=false
-ENV STREAMLIT_SERVER_ENABLE_XSRF_PROTECTION=false
-
+# Expose required port
 EXPOSE 7860
 
-# Run app
-CMD ["streamlit", "run", "app.py"]
+# Run Streamlit app with ALL required configs
+CMD ["streamlit", "run", "app.py",
+     "--server.port=7860",
+     "--server.address=0.0.0.0",
+     "--server.enableCORS=false",
+     "--server.enableXsrfProtection=false",
+     "--server.maxUploadSize=200"]
+     
