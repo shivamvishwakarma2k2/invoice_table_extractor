@@ -6,8 +6,6 @@ from pdf2image import convert_from_bytes
 from app_entry import run_application
 from utlis.logger import AppLogger
 
-st.set_option('server.maxUploadSize', 200)  # increase limit (MB)
-
 logger = AppLogger()
 
 # Initialize logs
