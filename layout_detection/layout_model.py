@@ -71,11 +71,11 @@ from huggingface_hub import hf_hub_download
 # CONFIG
 # ---------------------------------------------------
 
-# 👉 HF Model Config (USED IN DEPLOYMENT)
+# HF Model Config (USED IN DEPLOYMENT)
 HF_REPO_ID = "shivam2k2/docustruct-yolo"
 HF_MODEL_FILENAME = "yolov8x-doclaynet-epoch64-imgsz640-initiallr1e-4-finallr1e-5.pt"
 
-# 👉 LOCAL MODEL PATH (USED FOR LOCAL DEVELOPMENT)
+# LOCAL MODEL PATH (USED FOR LOCAL DEVELOPMENT)
 LOCAL_MODEL_PATH = "models/yolov8x-doclaynet-epoch64-imgsz640-initiallr1e-4-finallr1e-5.pt"
 
 
@@ -87,9 +87,7 @@ def load_layout_model():
 
     print("Loading layout detection model...")
 
-    # ==========================================================
     # OPTION 1: LOAD FROM HUGGING FACE (DEFAULT - DEPLOYMENT)
-    # ==========================================================
     try:
         model_path = hf_hub_download(
             repo_id=HF_REPO_ID,
@@ -101,9 +99,7 @@ def load_layout_model():
         print(f"HF download failed: {e}")
         raise RuntimeError("Failed to download YOLO model from Hugging Face")
 
-    # ==========================================================
     # OPTION 2: LOAD LOCAL MODEL (FOR LOCAL USE ONLY)
-    # ==========================================================
     
     # import os
 

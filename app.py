@@ -108,7 +108,6 @@ with tab1:
 with tab2:
 
     if "results" not in st.session_state:
-        st.info("No extraction has been performed yet. Please upload a document and run extraction.")
         st.stop()
 
     results = st.session_state["results"]
@@ -178,7 +177,6 @@ with tab2:
 with tab3:
     
     if "results" not in st.session_state:
-        st.info("No extraction has been performed yet. Please upload a document and run extraction.")
         st.stop()
 
     results = st.session_state["results"]

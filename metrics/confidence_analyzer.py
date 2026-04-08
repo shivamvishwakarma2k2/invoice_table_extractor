@@ -103,9 +103,9 @@ class ConfidenceAnalyzer:
             structure_score = 0
 
         overall = (
-            0.5 * ocr_score +
+            0.3 * ocr_score +
             0.3 * completeness_score +
-            0.2 * structure_score
+            0.3 * structure_score
         )
 
         return round(overall, 4)

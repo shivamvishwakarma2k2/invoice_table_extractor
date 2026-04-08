@@ -143,11 +143,10 @@ def run_application(image):
                 else:
                     consistency_score = 1.0
 
-                # FINAL SCORE (NO OCR) for PP structure-based tables
                 final_score = (
-                    0.45 * completeness +
-                    0.265 * structure_score +
-                    0.258 * consistency_score
+                    0.3 * completeness +
+                    0.3 * structure_score +
+                    0.3 * consistency_score
                 )
 
                 metrics["overall_score"] = round(final_score, 4)
