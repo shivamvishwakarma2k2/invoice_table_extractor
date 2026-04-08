@@ -1,6 +1,7 @@
 import os
 import streamlit as st # type: ignore
 import numpy as np
+import tempfile
 import cv2
 from pdf2image import convert_from_bytes
 from app_entry import run_application
